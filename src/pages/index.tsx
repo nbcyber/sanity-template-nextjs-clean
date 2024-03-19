@@ -1,5 +1,6 @@
 import type { GetStaticProps, InferGetStaticPropsType } from 'next'
 import { useLiveQuery } from 'next-sanity/preview'
+import { useState } from 'react'
 
 import Card from '~/components/Card'
 import Container from '~/components/Container'
@@ -9,36 +10,47 @@ import { getClient } from '~/lib/sanity.client'
 import { getPosts, type Post, postsQuery } from '~/lib/sanity.queries'
 import type { SharedPageProps } from '~/pages/_app'
 
-export const getStaticProps: GetStaticProps<
-  SharedPageProps & {
-    posts: Post[]
-  }
-> = async ({ draftMode = false }) => {
-  const client = getClient(draftMode ? { token: readToken } : undefined)
-  const posts = await getPosts(client)
+const filePath = '../assets/pizza.jpg'
+const newFile = (filePath)
+const client = getClient();
 
-  return {
-    props: {
-      draftMode,
-      token: draftMode ? readToken : '',
-      posts,
-    },
-  }
-}
 
-export default function IndexPage(
-  props: InferGetStaticPropsType<typeof getStaticProps>,
-) {
-  const [posts] = useLiveQuery<Post[]>(props.posts, postsQuery)
+export default function IndexPage() {
+  const [addedMedia, setAddedMedia] = useState<File>()
+
+
+  const onImageChange = (event) => {
+    if (event.target.files && event.target.files[0]) {
+      setAddedMedia(event.target.files[0]);
+    }
+   }
+   
+  // sanity doesnt want the fucking url
+  const createMedia = async () => {
+   await client.assets.upload('image', addedMedia).then((res) => {
+    console.log(res)
+      const mediaDoc = {
+        _type: 'media',
+        name: res._createdAt,
+        assetId: res._id,
+        assetURL: res.url,
+  
+      }
+  
+      client.create(mediaDoc).then((mediaRes) => {
+        console.log(mediaRes);
+      })
+  
+      return mediaDoc;
+    })
+  }
+
+
   return (
-    <Container>
-      <section>
-        {posts.length ? (
-          posts.map((post) => <Card key={post._id} post={post} />)
-        ) : (
-          <Welcome />
-        )}
-      </section>
-    </Container>
+    <>
+        <input type="file" onChange={onImageChange} className="filetype" />
+        <button onClick={() => {createMedia()}}>This button will destroy it all</button>
+
+    </>
   )
 }

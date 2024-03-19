@@ -8,6 +8,7 @@ export function getClient(preview?: { token: string }): SanityClient {
     dataset,
     apiVersion,
     useCdn,
+    token: process.env.NEXT_PUBLIC_SANITY_API_TOKEN,
     perspective: 'published',
   })
   if (preview) {
